@@ -1,30 +1,25 @@
 
 import re
+import pandas as pd
 
 with open("../data/EPI_LogKOW_data.txt", "r", encoding='latin1') as f:
-    data = f.read()
-    num_ex = re.findall(r"(\d{6}-\d{2}-\d)(\s.+?\s)(-?\d{1,2}\.\d{2})", data)
-    print(len(num_ex))
-
+    data1 = f.read()
+    log_kow_data = re.findall(r"(\d{6}-\d{2}-\d)(\s.+?\s)(-?\d{1,2}\.\d{2})", data1)
 
 with open("../data/EPI_SMILES_CAS_data.txt", "r", encoding='latin1') as f:
-    data = f.read()
-    num_ex = re.findall(r"(\d{6}-\d{2}-\d)", data)
-    print(len(num_ex))
+    data2 = f.read()
+    data2 = re.sub(r'-{3,}', '', data2)
+    smiles_data = re.findall(r"(\d{6}-\d{2}-\d)(.+?\s)(\S+?)(\s|\s\s|\s.\s|\s..\s|\s.|\s..)(?=\d{6}-\d{2}-\d)", data2)
 
-# with open("../data/EPI_SMILES_CAS_data.txt", "r", encoding='latin1') as f:
-#     data = f.read()
-#     num_ex = re.findall(r"(\d{6}-\d{2}-\d)(\s.+?)(\s\S+?)", data)
-#     print(len(num_ex))
+log_kow_dict = {'CAS': [mol[0] for mol in log_kow_data], 'LogP': [mol[2] for mol in log_kow_data]}
+df_logp = pd.DataFrame(log_kow_dict)
+print(df_logp)
 
-with open("../data/EPI_SMILES_CAS_data.txt", "r", encoding='latin1') as f:
-    data = f.read()
-    data = re.sub(r'-{3,}', '', data)
-    num_ex2 = re.findall(r"(\d{6}-\d{2}-\d)(?:.+?)(?:\s\S+?)(?:\s|\s\s|\s.\s|\s..\s|\s.|\s..)", data)
-    print(len(num_ex2))
+smiles_dict = {'CAS': [mol[0] for mol in smiles_data], 'smiles_string': [mol[2] for mol in smiles_data]}
+df_smiles = pd.DataFrame(smiles_dict)
+print(df_smiles)
 
-s1 = set(num_ex)
-s2 = set(num_ex2)
-s3 = s1.difference(s2)
-print(len(s3))
-print(s3)
+df_combined = pd.merge(df_logp, df_smiles, how='inner', on='CAS')
+print(df_combined)
+
+df_combined.to_csv('../data/cleaned_logp_smiles_data.csv', index=False)
